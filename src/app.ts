@@ -1,6 +1,8 @@
 import { ActivityType } from "discord.js";
 import { createClient } from "./client/createClient.ts";
 import dotenv from "dotenv";
+import { loadAllEvents } from "./utils/loadEvents.ts";
+import { loadAllCommands } from "./utils/loadCommand.ts";
 
 dotenv.config();
 
@@ -10,16 +12,13 @@ if (!token) {
   throw new Error("BOT_TOKEN is not defined in the environment variables");
 }
 
-const client = createClient();
 
-client.on("clientReady", () => {
-  console.log(`Logged in as ${client.user?.tag}`);
-  //set status to streaming
-  client.user?.setPresence({
-    activities: [{ name: "Bingo Beat", type: ActivityType.Streaming }],
-    status: "dnd",
-  });
-});
+
+
 export async function startBot() {
+  const events = await loadAllEvents();
+  const commands = await loadAllCommands();
+
+  const client = createClient(events, commands);
   await client.login(token);
 }

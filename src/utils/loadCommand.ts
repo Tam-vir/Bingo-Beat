@@ -5,11 +5,17 @@ import fs from "fs";
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+import type { Command } from "../types/Command.ts";
 
-export default async function loadCommand(commandName: string) {
+/**
+ * Dynamically load a single command by folder name
+ */
+export async function loadCommand(
+  commandName: string
+): Promise<Command | null> {
   const commandPath = join(
     __dirname,
-    "../src/commands",
+    "../commands",
     `${commandName}/command.ts`
   );
 
@@ -18,19 +24,20 @@ export default async function loadCommand(commandName: string) {
     return null;
   }
 
-  // Use dynamic import instead of require for ES modules
   try {
     const commandModule = await import(`file://${commandPath}`);
-    return commandModule.default;
+    return commandModule.default as Command;
   } catch (error) {
     console.error(`Error loading command ${commandName}:`, error);
     return null;
   }
 }
 
-// Load all commands and return a collection
-export async function loadAllCommands() {
-  const commandsDir = join(__dirname, "../src/commands");
+/**
+ * Dynamically load all commands in the commands directory
+ */
+export async function loadAllCommands(): Promise<{ [key: string]: Command }> {
+  const commandsDir = join(__dirname, "../commands");
 
   if (!fs.existsSync(commandsDir)) {
     console.error(`Commands directory not found at ${commandsDir}`);
@@ -38,11 +45,11 @@ export async function loadAllCommands() {
   }
 
   const commandFolders = fs.readdirSync(commandsDir);
-  const commands: { [key: string]: any } = {};
+  const commands: { [key: string]: Command } = {};
 
   for (const folder of commandFolders) {
     const command = await loadCommand(folder);
-    if (command) {
+    if (command && command.name) {
       commands[command.name] = command;
     }
   }
